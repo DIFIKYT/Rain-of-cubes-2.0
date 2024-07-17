@@ -1,31 +1,41 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
-public class Bomb : MonoBehaviour
+public class Bomb : Item
 {
-    [SerializeField] private float _explosionForce;
-    [SerializeField] private float _explosionRadius;
+    [SerializeField] private float _fadeDuration;
+    [SerializeField] private Renderer _renderer;
+    [SerializeField] private Explosion _explosion;
+
+    public event Action<Bomb> Exploded;
 
     private void OnEnable()
     {
-        
+        StartCoroutine(IncreasingTransparency());
     }
 
-    //private IEnumerator IncreasingTransparency()
-    //{
-
-    //}
-
-    private void Explode()
+    private void OnDisable()
     {
-        Vector3 explosionPosition = gameObject.transform.position;
+        _renderer.material.color = Color.black;
+    }
 
-        Collider[] colliders = Physics.OverlapSphere(explosionPosition, _explosionRadius);
+    private IEnumerator IncreasingTransparency()
+    {
+        Material material = _renderer.material;
+        Color originalColor = material.color;
+        float elapsedTime = 0f;
 
-        foreach (Collider collider in colliders)
+        while (elapsedTime < _fadeDuration)
         {
-            if (collider.TryGetComponent<Rigidbody>(out Rigidbody rigiBody))
-                rigiBody.AddExplosionForce(_explosionForce, explosionPosition, _explosionRadius);
+            elapsedTime += Time.deltaTime;
+            float newAlpha = Mathf.Lerp(1f, 0f, elapsedTime / _fadeDuration);
+            material.color = new Color(originalColor.r, originalColor.g, originalColor.b, newAlpha);
+            yield return null;
         }
+
+        _explosion.Explode(this.gameObject.transform.position);
+
+        Exploded?.Invoke(this);
     }
 }

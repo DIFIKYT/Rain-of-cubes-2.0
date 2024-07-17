@@ -3,7 +3,7 @@ using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(Renderer))]
-public class Cube : MonoBehaviour
+public class Cube : Item
 {
     public event Action<Cube> LifeTimeOut;
     public event Action<Cube> ContactWithPlatform;

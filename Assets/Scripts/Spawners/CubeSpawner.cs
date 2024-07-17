@@ -2,86 +2,44 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Pool;
 
-public class CubeSpawner : MonoBehaviour
+public class CubeSpawner : BaseSpawner<Cube>
 {
     [SerializeField] private float _yCoordinateSpawn;
     [SerializeField] private float _xMinCoordinateSpawn;
     [SerializeField] private float _xMaxCoordinateSpawn;
     [SerializeField] private float _zMinCoordinateSpawn;
     [SerializeField] private float _zMaxCoordinateSpawn;
-    [SerializeField] private int _defaultCapacity;
-    [SerializeField] private int _maxSize;
-    [SerializeField] private Cube _cubePrefab;
     [SerializeField] private List<Color> _colors;
 
     public event Action<Vector3> CubeDisappeared;
 
-    private ObjectPool<Cube> _cubePool;
     private float _delay = 0.5f;
-
-    private void Awake()
-    {
-        _cubePool = new ObjectPool<Cube>(
-            createFunc: CreateCube,
-            actionOnGet: OnGetCube,
-            actionOnRelease: OnReleaseCube,
-            actionOnDestroy: OnDestroyCube,
-            collectionCheck: true,
-            defaultCapacity: _defaultCapacity,
-            maxSize: _maxSize);
-    }
 
     private void Start()
     {
         StartCoroutine(Spawn());
     }
 
-    private Cube CreateCube()
+    protected override void OnGetItem(Cube cube)
     {
-        Cube cube = Instantiate(_cubePrefab);
-        SubscribeOnEvents(cube);
-        return cube;
-    }
-
-    private void OnGetCube(Cube cube)
-    {
-        cube.transform.position = SetSpawnCoordinate();
+        cube.transform.position = GetSpawnPosition();
         cube.gameObject.SetActive(true);
     }
 
-    private void OnReleaseCube(Cube cube)
+    protected override void OnReleaseItem(Cube cube)
     {
         cube.gameObject.SetActive(false);
         CubeDisappeared?.Invoke(cube.gameObject.transform.position);
-    }
-
-    private void OnDestroyCube(Cube cube)
-    {
-        Destroy(cube.gameObject);
     }
 
     private IEnumerator Spawn()
     {
         while (true)
         {
-            _cubePool.Get();
+            _pool.Get();
             yield return new WaitForSeconds(_delay);
         }
-    }
-
-    private void SubscribeOnEvents(Cube cube)
-    {
-        cube.LifeTimeOut += ReturnToPool;
-        cube.ContactWithPlatform += ChangeColor;
-    }
-
-    private Vector3 SetSpawnCoordinate()
-    {
-        float xSpawnCoordinate = UnityEngine.Random.Range(_xMinCoordinateSpawn, _xMaxCoordinateSpawn);
-        float zSpawnCoordinate = UnityEngine.Random.Range(_zMinCoordinateSpawn, _zMaxCoordinateSpawn);
-        return new Vector3(xSpawnCoordinate, _yCoordinateSpawn, zSpawnCoordinate);
     }
 
     private void ChangeColor(Cube cube)
@@ -90,8 +48,22 @@ public class CubeSpawner : MonoBehaviour
             renderer.material.color = _colors[UnityEngine.Random.Range(0, _colors.Count)];
     }
 
-    private void ReturnToPool(Cube cube)
+    protected override Vector3 GetSpawnPosition()
     {
-        _cubePool.Release(cube);
+        float xSpawnCoordinate = UnityEngine.Random.Range(_xMinCoordinateSpawn, _xMaxCoordinateSpawn);
+        float zSpawnCoordinate = UnityEngine.Random.Range(_zMinCoordinateSpawn, _zMaxCoordinateSpawn);
+        return new Vector3(xSpawnCoordinate, _yCoordinateSpawn, zSpawnCoordinate);
+    }
+
+    protected override void SubscribeOnEvents(Cube cube)
+    {
+        cube.LifeTimeOut += ReturnToPool;
+        cube.ContactWithPlatform += ChangeColor;
+    }
+
+    protected override void UnSubscribeOnEvents(Cube cube)
+    {
+        cube.LifeTimeOut -= ReturnToPool;
+        cube.ContactWithPlatform -= ChangeColor;
     }
 }
