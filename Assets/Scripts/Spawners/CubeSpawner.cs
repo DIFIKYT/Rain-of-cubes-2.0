@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CubeSpawner : BaseSpawner<Cube>
+public class CubeSpawner : Spawner<Cube>
 {
     [SerializeField] private float _yCoordinateSpawn;
     [SerializeField] private float _xMinCoordinateSpawn;
@@ -38,6 +38,7 @@ public class CubeSpawner : BaseSpawner<Cube>
         while (true)
         {
             _pool.Get();
+            _totalCreatedObjects++;
             yield return new WaitForSeconds(_delay);
         }
     }

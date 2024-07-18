@@ -1,17 +1,21 @@
 using UnityEngine;
 using UnityEngine.Pool;
 
-public abstract class BaseSpawner<T> : MonoBehaviour where T : Item
+public abstract class Spawner<T> : MonoBehaviour where T : Item
 {
     [SerializeField] protected int _defaultCapacity;
     [SerializeField] protected int _maxSize;
     [SerializeField] protected T _prefab;
 
+    public float AmountActiveObjects => _pool.CountActive;
+    public float TotalCreatedObjects => _totalCreatedObjects;
+
     protected ObjectPool<T> _pool;
 
     protected Vector3 _spawnPosition;
+    protected float _totalCreatedObjects;
 
-    protected virtual void Awake()
+    protected void Awake()
     {
         _pool = new ObjectPool<T>(
             createFunc: CreateItem,

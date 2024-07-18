@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class BombSpawner : BaseSpawner<Bomb>
+public class BombSpawner : Spawner<Bomb>
 {
     [SerializeField] private CubeSpawner _cubeSpawner;
 
@@ -18,6 +18,7 @@ public class BombSpawner : BaseSpawner<Bomb>
     {
         _spawnPosition = spawnPosition;
         _pool.Get();
+        _totalCreatedObjects++;
     }
 
     protected override Vector3 GetSpawnPosition()
