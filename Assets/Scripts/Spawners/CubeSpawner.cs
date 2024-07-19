@@ -12,48 +12,32 @@ public class CubeSpawner : Spawner<Cube>
     [SerializeField] private float _zMaxCoordinateSpawn;
     [SerializeField] private List<Color> _colors;
 
+    readonly float _delay = 0.5f;
+    private Vector3 _spawnPosition;
+
     public event Action<Vector3> CubeDisappeared;
-
-    private float _delay = 0.5f;
-
-    private void Start()
-    {
-        StartCoroutine(Spawn());
-    }
 
     protected override void OnGetItem(Cube cube)
     {
+        base.OnGetItem(cube);
         cube.transform.position = GetSpawnPosition();
         cube.gameObject.SetActive(true);
     }
 
     protected override void OnReleaseItem(Cube cube)
     {
-        cube.gameObject.SetActive(false);
-        CubeDisappeared?.Invoke(cube.gameObject.transform.position);
-    }
-
-    private IEnumerator Spawn()
-    {
-        while (true)
-        {
-            _pool.Get();
-            _totalCreatedObjects++;
-            yield return new WaitForSeconds(_delay);
-        }
-    }
-
-    private void ChangeColor(Cube cube)
-    {
-        if (cube.TryGetComponent<Renderer>(out Renderer renderer))
-            renderer.material.color = _colors[UnityEngine.Random.Range(0, _colors.Count)];
+        base.OnReleaseItem(cube);
+        CubeDisappeared?.Invoke(cube.transform.position);
     }
 
     protected override Vector3 GetSpawnPosition()
     {
-        float xSpawnCoordinate = UnityEngine.Random.Range(_xMinCoordinateSpawn, _xMaxCoordinateSpawn);
-        float zSpawnCoordinate = UnityEngine.Random.Range(_zMinCoordinateSpawn, _zMaxCoordinateSpawn);
-        return new Vector3(xSpawnCoordinate, _yCoordinateSpawn, zSpawnCoordinate);
+        return _spawnPosition;
+    }
+
+    protected override void SetSpawnPosition(Vector3 position)
+    {
+        _spawnPosition = position;
     }
 
     protected override void SubscribeOnEvents(Cube cube)
@@ -66,5 +50,32 @@ public class CubeSpawner : Spawner<Cube>
     {
         cube.LifeTimeOut -= ReturnToPool;
         cube.ContactWithPlatform -= ChangeColor;
+    }
+
+    private void Start()
+    {
+        StartCoroutine(SpawnCoroutine());
+    }
+
+    private Vector3 GetRandomSpawnPosition()
+    {
+        float xSpawnCoordinate = UnityEngine.Random.Range(_xMinCoordinateSpawn, _xMaxCoordinateSpawn);
+        float zSpawnCoordinate = UnityEngine.Random.Range(_zMinCoordinateSpawn, _zMaxCoordinateSpawn);
+        return new Vector3(xSpawnCoordinate, _yCoordinateSpawn, zSpawnCoordinate);
+    }
+
+    private IEnumerator SpawnCoroutine()
+    {
+        while (true)
+        {
+            Spawn(GetRandomSpawnPosition());
+            yield return new WaitForSeconds(_delay);
+        }
+    }
+
+    private void ChangeColor(Cube cube)
+    {
+        if (cube.TryGetComponent<Renderer>(out Renderer renderer))
+            renderer.material.color = _colors[UnityEngine.Random.Range(0, _colors.Count)];
     }
 }

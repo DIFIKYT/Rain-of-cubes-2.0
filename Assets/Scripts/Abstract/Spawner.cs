@@ -1,21 +1,63 @@
+using System;
 using UnityEngine;
 using UnityEngine.Pool;
 
 public abstract class Spawner<T> : MonoBehaviour where T : Item
 {
-    [SerializeField] protected int _defaultCapacity;
-    [SerializeField] protected int _maxSize;
-    [SerializeField] protected T _prefab;
-
-    public float AmountActiveObjects => _pool.CountActive;
-    public float TotalCreatedObjects => _totalCreatedObjects;
+    [SerializeField] private int _defaultCapacity;
+    [SerializeField] private int _maxSize;
+    [SerializeField] private T _prefab;
 
     protected ObjectPool<T> _pool;
+    private float _amountCreatedItems;
+    private float _amountSpawnedItems;
 
-    protected Vector3 _spawnPosition;
-    protected float _totalCreatedObjects;
+    public event Action CountCreatedItemsChanged;
+    public event Action CountSpawnedItemsChanged;
+    public event Action CountActiveItemsChanged;
 
-    protected void Awake()
+    public float AmountCreatedItems => _amountCreatedItems;
+    public float AmountSpawnedItems => _amountSpawnedItems;
+    public float AmountActiveItems => _pool.CountActive;
+
+    protected virtual void OnGetItem(T item)
+    {
+        item.transform.position = GetSpawnPosition();
+        item.gameObject.SetActive(true);
+        CountActiveItemsChanged?.Invoke();
+    }
+
+    protected virtual void OnReleaseItem(T item)
+    {
+        item.gameObject.SetActive(false);
+        CountActiveItemsChanged?.Invoke();
+    }
+
+    protected void Spawn(Vector3 spawnPosition)
+    {
+        SetSpawnPosition(spawnPosition);
+        IncreaseSpawnedItems();
+        _pool.Get();
+    }
+
+    protected void OnDestroyItem(T item)
+    {
+        UnSubscribeOnEvents(item);
+        Destroy(item.gameObject);
+    }
+
+    protected void ReturnToPool(T item)
+    {
+        _pool.Release(item);
+    }
+
+    protected void IncreaseSpawnedItems()
+    {
+        _amountSpawnedItems++;
+        CountSpawnedItemsChanged?.Invoke();
+    }
+
+    private void Awake()
     {
         _pool = new ObjectPool<T>(
             createFunc: CreateItem,
@@ -27,36 +69,17 @@ public abstract class Spawner<T> : MonoBehaviour where T : Item
             maxSize: _maxSize);
     }
 
-    protected virtual T CreateItem()
+    private T CreateItem()
     {
         T item = Instantiate(_prefab);
         SubscribeOnEvents(item);
+        _amountCreatedItems++;
+        CountCreatedItemsChanged?.Invoke();
         return item;
     }
 
-    protected virtual void OnGetItem(T item)
-    {
-        item.transform.position = _spawnPosition;
-        item.gameObject.SetActive(true);
-    }
-
-    protected virtual void OnReleaseItem(T item)
-    {
-        item.gameObject.SetActive(false);
-    }
-
-    protected virtual void OnDestroyItem(T item)
-    {
-        UnSubscribeOnEvents(item);
-        Destroy(item.gameObject);
-    }
-
-    protected void ReturnToPool(T item)
-    {
-        _pool.Release(item);
-    }
-
     protected abstract Vector3 GetSpawnPosition();
+    protected abstract void SetSpawnPosition(Vector3 position);
     protected abstract void SubscribeOnEvents(T item);
     protected abstract void UnSubscribeOnEvents(T item);
 }
