@@ -43,12 +43,14 @@ public class CubeSpawner : Spawner<Cube>
     protected override void SubscribeOnEvents(Cube cube)
     {
         cube.LifeTimeOut += ReturnToPool;
+        cube.LifeTimeOut += ChangeColorToDefault;
         cube.ContactWithPlatform += ChangeColor;
     }
 
     protected override void UnSubscribeOnEvents(Cube cube)
     {
         cube.LifeTimeOut -= ReturnToPool;
+        cube.LifeTimeOut -= ChangeColorToDefault;
         cube.ContactWithPlatform -= ChangeColor;
     }
 
@@ -77,5 +79,11 @@ public class CubeSpawner : Spawner<Cube>
     {
         if (cube.TryGetComponent<Renderer>(out Renderer renderer))
             renderer.material.color = _colors[UnityEngine.Random.Range(0, _colors.Count)];
+    }
+
+    private void ChangeColorToDefault(Cube cube)
+    {
+        if(cube.TryGetComponent(out Renderer renderer))
+            renderer.material.color = Color.white;
     }
 }

@@ -8,7 +8,7 @@ public abstract class Spawner<T> : MonoBehaviour where T : Item
     [SerializeField] private int _maxSize;
     [SerializeField] private T _prefab;
 
-    protected ObjectPool<T> _pool;
+    protected ObjectPool<T> Pool;
     private float _amountCreatedItems;
     private float _amountSpawnedItems;
 
@@ -18,7 +18,19 @@ public abstract class Spawner<T> : MonoBehaviour where T : Item
 
     public float AmountCreatedItems => _amountCreatedItems;
     public float AmountSpawnedItems => _amountSpawnedItems;
-    public float AmountActiveItems => _pool.CountActive;
+    public float AmountActiveItems => Pool.CountActive;
+
+    private void Awake()
+    {
+        Pool = new ObjectPool<T>(
+            createFunc: CreateItem,
+            actionOnGet: OnGetItem,
+            actionOnRelease: OnReleaseItem,
+            actionOnDestroy: OnDestroyItem,
+            collectionCheck: true,
+            defaultCapacity: _defaultCapacity,
+            maxSize: _maxSize);
+    }
 
     protected virtual void OnGetItem(T item)
     {
@@ -37,7 +49,7 @@ public abstract class Spawner<T> : MonoBehaviour where T : Item
     {
         SetSpawnPosition(spawnPosition);
         IncreaseSpawnedItems();
-        _pool.Get();
+        Pool.Get();
     }
 
     protected void OnDestroyItem(T item)
@@ -48,25 +60,13 @@ public abstract class Spawner<T> : MonoBehaviour where T : Item
 
     protected void ReturnToPool(T item)
     {
-        _pool.Release(item);
+        Pool.Release(item);
     }
 
     protected void IncreaseSpawnedItems()
     {
         _amountSpawnedItems++;
         CountSpawnedItemsChanged?.Invoke();
-    }
-
-    private void Awake()
-    {
-        _pool = new ObjectPool<T>(
-            createFunc: CreateItem,
-            actionOnGet: OnGetItem,
-            actionOnRelease: OnReleaseItem,
-            actionOnDestroy: OnDestroyItem,
-            collectionCheck: true,
-            defaultCapacity: _defaultCapacity,
-            maxSize: _maxSize);
     }
 
     private T CreateItem()

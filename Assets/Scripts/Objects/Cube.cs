@@ -29,7 +29,6 @@ public class Cube : Item
 
         LifeTimeOut?.Invoke(this);
         _isContactWithPlatform = false;
-        GetComponent<Renderer>().material.color = Color.white;
     }
 
     private int GetRandomLifeTime()
